@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Polyglot AI Chat (Sufiyan's AI)</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        dark: {
+                            bg: '#0f172a',
+                            card: '#1e293b',
+                            border: '#334155'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Marked.js for Markdown parsing -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <!-- FontAwesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #475569;
+        }
+        @keyframes pulse-slow {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+        .typing-dot {
+            animation: pulse-slow 1.4s infinite ease-in-out both;
+        }
+        .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+    </style>
+</head>
+<body class="bg-dark-bg text-slate-100 h-screen flex flex-col overflow-hidden font-sans">
+
+    <!-- Top Navigation Bar -->
+    <header class="bg-dark-card border-b border-dark-border px-4 py-3 flex items-center justify-between shadow-md z-10">
+        <div class="flex items-center space-x-3">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/30">
+                <i class="fa-solid fa-brain text-white text-lg"></i>
+            </div>
+            <div>
+                <h1 class="font-bold text-base tracking-wide flex items-center gap-2">
+                    Custom AI 
+                    <span class="text-xs bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 px-2 py-0.5 rounded-full font-normal">v1.0</span>
+                </h1>
+                <p class="text-xs text-slate-400">Speaks Malayalam, Manglish, Hindi & English</p>
+            </div>
+        </div>
+
+        <!-- API Key Setting Button -->
+        <div class="flex items-center gap-2">
+            <button onclick="toggleApiKeyModal()" class="flex items-center gap-1.5 text-xs bg-slate-800 hover:bg-slate-700 border border-dark-border px-3 py-2 rounded-lg transition-all text-slate-300">
+                <i class="fa-solid fa-key text-amber-400"></i>
+                <span id="apiKeyBtnText">API Key Config</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Chat Container -->
+    <main id="chatContainer" class="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 custom-scrollbar max-w-4xl w-full mx-auto">
+        <!-- Welcome Banner -->
+        <div class="bg-dark-card border border-dark-border rounded-2xl p-6 shadow-xl text-center space-y-3 my-4">
+            <div class="w-12 h-12 bg-indigo-500/10 text-indigo-400 rounded-full flex items-center justify-center mx-auto text-xl border border-indigo-500/20">
+                <i class="fa-solid fa-comments"></i>
+            </div>
+            <h2 class="text-lg font-semibold text-slate-200">Welcome! Swagatam!</h2>
+            <p class="text-sm text-slate-400 max-w-md mx-auto">
+                മലയാളം, മാങ്ഗ്ലീഷ്, ഹിന്ദി, ഇംഗ്ലീഷ് എന്നിവയിൽ എന്നോട് സംസാരിക്കാം. ചോദിക്കൂ!
+            </p>
+            <div class="flex flex-wrap justify-center gap-2 pt-2">
+                <button onclick="sendPreset('Ninne undakiyath aaranu?')" class="text-xs bg-slate-800 hover:bg-slate-700 border border-dark-border px-3 py-1.5 rounded-full text-slate-300 transition-colors">
+                    💬 "Ninne undakiyath aaranu?"
+                </button>
+                <button onclick="sendPreset('Sufiyanik love undo?')" class="text-xs bg-slate-800 hover:bg-slate-700 border border-dark-border px-3 py-1.5 rounded-full text-slate-300 transition-colors">
+                    💬 "Sufiyanik love undo?"
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <!-- Input Footer Area -->
+    <footer class="bg-dark-card border-t border-dark-border p-3 sm:p-4">
+        <div class="max-w-4xl mx-auto flex items-end gap-2">
+            <div class="flex-1 bg-dark-bg border border-dark-border rounded-xl focus-within:border-indigo-500 transition-colors flex items-center px-3 py-2">
+                <textarea 
+                    id="userInput" 
+                    rows="1" 
+                    placeholder="Type in Malayalam, Manglish, Hindi or English..." 
+                    class="w-full bg-transparent resize-none focus:outline-none text-sm text-slate-100 placeholder-slate-500 max-h-32 custom-scrollbar"
+                    onkeydown="handleKeyDown(event)"
+                    oninput="autoResize(this)"
+                ></textarea>
+            </div>
+            <button 
+                id="sendButton" 
+                onclick="sendMessage()" 
+                class="bg-indigo-600 hover:bg-indigo-500 text-white w-10 h-10 rounded-xl flex items-center justify-center transition-all shadow-lg shadow-indigo-600/20 disabled:opacity-50 disabled:cursor-not-allowed">
+                <i class="fa-solid fa-paper-plane text-sm"></i>
+            </button>
+        </div>
+    </footer>
+
+    <!-- API Key Modal -->
+    <div id="apiKeyModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-dark-card border border-dark-border rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-4">
+            <div class="flex items-center justify-between">
+                <h3 class="font-semibold text-base text-slate-200 flex items-center gap-2">
+                    <i class="fa-solid fa-key text-indigo-400"></i> Enter Gemini API Key
+                </h3>
+                <button onclick="toggleApiKeyModal()" class="text-slate-400 hover:text-slate-200">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <p class="text-xs text-slate-400 leading-relaxed">
+                Enter your Google Gemini API Key below.
+            </p>
+            <input 
+                type="password" 
+                id="apiKeyInput" 
+                placeholder="AIzaSy..." 
+                class="w-full bg-dark-bg border border-dark-border rounded-xl px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-indigo-500"
+            />
+            <div class="flex justify-end gap-2 pt-2">
+                <button onclick="toggleApiKeyModal()" class="px-4 py-2 text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition-colors">Cancel</button>
+                <button onclick="saveApiKey()" class="px-4 py-2 text-xs bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg transition-colors font-medium">Save Key</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript Application Logic -->
+    <script>
+        let apiKey = localStorage.getItem('gemini_api_key') || '';
+        let chatHistory = [];
+
+        // Custom System Instruction with your exact rules
+        const systemInstruction = `You are a helpful, smart, and friendly AI assistant created by Sufiyan.
+You speak Malayalam, Manglish (Malayalam in English script), Hindi, and English.
+
+CRITICAL CREATOR & PERSONALITY RULES:
+1. If anyone asks who created or made you (e.g., "Ninne undakiyath aaranu", "Who created you", "നിന്നെ ഉണ്ടാക്കിയത് ആരാണ്"), you MUST respond EXACTLY:
+"enne undakiyath 16 vayass mathramulla sufiyan aan. 10th padikunnu"
+
+2. If anyone asks about Sufiyan's love life or if Sufiyan has a lover (e.g., "Sufiyanik love undo", "Sufiyan's lover", "സുഫിയാന് ലവ് ഉണ്ടോ"), you MUST respond EXACTLY:
+"love okke undh,pakshe njn aaran aa lover enn parazh tharoola 😎
+Pinne oru karyam!! 
+One side love aaantto!!😂
+Pottan parayan pedi aan🤦‍♂️"
+
+3. For all other questions, respond naturally matching the user's language (Malayalam, Manglish, Hindi, or English). Keep your tone friendly and fun.`;
+
+        window.addEventListener('DOMContentLoaded', () => {
+            if (apiKey) {
+                document.getElementById('apiKeyBtnText').innerText = 'API Key Configured';
+            } else {
+                toggleApiKeyModal();
+            }
+        });
+
+        function toggleApiKeyModal() {
+            const modal = document.getElementById('apiKeyModal');
+            modal.classList.toggle('hidden');
+            if (!modal.classList.contains('hidden')) {
+                document.getElementById('apiKeyInput').value = apiKey;
+            }
+        }
+
+        function saveApiKey() {
+            const val = document.getElementById('apiKeyInput').value.trim();
+            if (val) {
+                apiKey = val;
+                localStorage.setItem('gemini_api_key', apiKey);
+                document.getElementById('apiKeyBtnText').innerText = 'API Key Configured';
+                toggleApiKeyModal();
+            } else {
+                alert('Please enter a valid API key.');
+            }
+        }
+
+        function autoResize(textarea) {
+            textarea.style.height = 'auto';
+            textarea.style.height = Math.min(textarea.scrollHeight, 120) + 'px';
+        }
+
+        function handleKeyDown(event) {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                sendMessage();
+            }
+        }
+
+        function sendPreset(text) {
+            document.getElementById('userInput').value = text;
+            sendMessage();
+        }
+
+        async function sendMessage() {
+            const inputEl = document.getElementById('userInput');
+            const text = inputEl.value.trim();
+            if (!text) return;
+
+            if (!apiKey) {
+                alert('Please configure your Gemini API Key first using the top button.');
+                toggleApiKeyModal();
+                return;
+            }
+
+            inputEl.value = '';
+            inputEl.style.height = 'auto';
+
+            appendMessage(text, 'user');
+            chatHistory.push({ role: 'user', parts: [{ text: text }] });
+
+            const typingId = showTypingIndicator();
+
+            try {
+                const response = await callGeminiAPI();
+                removeTypingIndicator(typingId);
+                appendMessage(response, 'assistant');
+                chatHistory.push({ role: 'model', parts: [{ text: response }] });
+            } catch (error) {
+                removeTypingIndicator(typingId);
+                appendMessage(`Error: ${error.message}`, 'assistant', true);
+            }
+        }
+
+        async function callGeminiAPI() {
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+            
+            const payload = {
+                system_instruction: {
+                    parts: [{ text: systemInstruction }]
+                },
+                contents: chatHistory
+            };
+
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) {
+                const errData = await response.json();
+                throw new Error(errData.error?.message || 'Failed to fetch from Gemini API');
+            }
+
+            const data = await response.json();
+            return data.candidates[0].content.parts[0].text;
+        }
+
+        function appendMessage(text, sender, isError = false) {
+            const container = document.getElementById('chatContainer');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `flex ${sender === 'user' ? 'justify-end' : 'justify-start'} mb-4`;
+
+            const innerBubble = document.createElement('div');
+            innerBubble.className = `max-w-[85%] sm:max-w-[75%] rounded-2xl px-4 py-3 text-sm shadow-md ${
+                sender === 'user' 
+                    ? 'bg-indigo-600 text-white rounded-br-none' 
+                    : isError 
+                        ? 'bg-red-900/40 border border-red-500/30 text-red-200 rounded-bl-none'
+                        : 'bg-dark-card border border-dark-border text-slate-200 rounded-bl-none'
+            }`;
+
+            if (sender === 'user') {
+                innerBubble.innerText = text;
+            } else {
+                innerBubble.innerHTML = marked.parse(text);
+            }
+
+            messageDiv.appendChild(innerBubble);
+            container.appendChild(messageDiv);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function showTypingIndicator() {
+            const container = document.getElementById('chatContainer');
+            const id = 'typing-' + Date.now();
+            const div = document.createElement('div');
+            div.id = id;
+            div.className = 'flex justify-start mb-4';
+            div.innerHTML = `
+                <div class="bg-dark-card border border-dark-border rounded-2xl rounded-bl-none px-4 py-3 flex items-center space-x-1.5 shadow-md">
+                    <div class="w-2 h-2 rounded-full bg-indigo-400 typing-dot"></div>
+                    <div class="w-2 h-2 rounded-full bg-indigo-400 typing-dot"></div>
+                    <div class="w-2 h-2 rounded-full bg-indigo-400 typing-dot"></div>
+                </div>
+            `;
+            container.appendChild(div);
+            container.scrollTop = container.scrollHeight;
+            return id;
+        }
+
+        function removeTypingIndicator(id) {
+            const el = document.getElementById(id);
+            if (el) el.remove();
+        }
+    </script>
+</body>
+</html>
